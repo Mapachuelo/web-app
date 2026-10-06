@@ -48,6 +48,7 @@ Reglas garantizadas por la API:
 - `409` si el `documento` ya pertenece a otro usuario activo; se registra en `sync_conflicts` para revisión.
 - El índice único de `documento` es parcial (`WHERE deleted = false`): el soft delete libera el documento.
 - `password` (SHA-256 hex que envía la APK) se guarda en `password_hash` y **nunca se devuelve** en el pull.
+- `/api/*` responde CORS (`CORS_ORIGINS`, default `*`) para que la app Capacitor en navegador/WebView pueda llamar cross-origin; los preflight `OPTIONS` se responden en el middleware.
 
 ## Logs de la app
 
@@ -139,6 +140,7 @@ El pod publica Next.js solo en loopback (`127.0.0.1:APP_PORT`); nginx (configura
 | `DATABASE_URL` | Conexión PostgreSQL (dentro del pod: `127.0.0.1:5432`) |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Contenedor PostgreSQL |
 | `API_KEY` | Clave que la APK envía en `X-Api-Key` |
+| `CORS_ORIGINS` | Orígenes permitidos para `/api/*` (la app Capacitor llama cross-origin). `*` o lista separada por comas |
 | `APP_PORT` | Puerto loopback donde el pod publica Next.js |
 | `WEB_PORT` | Puerto aleatorio del host donde nginx recibe HTTP |
 | `SESSION_SECRET` | Reservada para el login del panel (F2) |
@@ -150,6 +152,7 @@ El pod publica Next.js solo en loopback (`127.0.0.1:APP_PORT`); nginx (configura
 pod.yaml                 manifiesto para `podman kube play` (pod + PVCs)
 POD.md                   guia de ejecucion del pod
 src/
+  middleware.ts            CORS de /api/* (preflight OPTIONS + CORS_ORIGINS)
   app/api/users/route.ts        POST (upsert) + GET (pull incremental)
   app/api/client-logs/route.ts  POST lotes de logs de la APK
   app/api/health/route.ts       healthcheck publico

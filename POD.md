@@ -14,6 +14,7 @@ Guía para levantar la API + PostgreSQL en un solo pod usando `pod.yaml`.
 | `DATABASE_URL` | Host `127.0.0.1` (dentro del pod la base es local) |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Credenciales del contenedor PostgreSQL |
 | `API_KEY` | Clave que envía la APK en `X-Api-Key` |
+| `CORS_ORIGINS` | Orígenes permitidos para `/api/*` (`*` o lista separada por comas; la app Capacitor llama cross-origin) |
 | `APP_PORT` | Puerto loopback donde el pod publica Next.js (default `3000`) |
 | `BIND_IP` | IP de publicación (default `127.0.0.1`; en VPS usar `0.0.0.0`) |
 | `WEB_PORT` | Puerto aleatorio del host donde nginx recibe HTTP (lo usa tu nginx) |

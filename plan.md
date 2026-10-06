@@ -7,6 +7,8 @@ Documento de planteamiento del backend web para la app Android offline-first ([a
 - **Stack**: Next.js 16 (App Router, standalone) + PostgreSQL 17 + Prisma 7 (adapter pg) + Zod 4. Pnpm como gestor; build dentro del contenedor.
 - **Despliegue**: Podman. Dos rutas: `podman kube play` con `pod.yaml` (pod + PVCs + secreto generado del `.env`; la web espera la base, migra y arranca; guia en `POD.md`) o contenedores sueltos con `deploy/podman.sh`. La web publica solo en loopback; nginx (configurado aparte) recibe HTTP en un puerto aleatorio fijo guardado en `.env`. El `.env` lo administra el despliegue, nunca se versiona.
 - **Auth**: `X-Api-Key` para la API de la APK; login de administrador para el panel en F2.
+- **CORS**: los endpoints `/api/*` agregan headers CORS y responden `OPTIONS` (middleware) con `CORS_ORIGINS` configurable (`*` por defecto). La app del repo `app` es web (Capacitor) y llama cross-origin desde el navegador/WebView; sin esto el sync no funciona en web.
+- **Pruebas cross-repo**: la integración real app <-> web-app corre en un pod Podman del repo `app` (`deploy/e2e.sh`): PostgreSQL + imagen `kube` de este repo + tests Vitest + Playwright, sin publicar puertos.
 - **IDs**: UUID v7. La APK los genera en offline; la web/import los generan al crear.
 
 ## Contrato (congelado)
@@ -55,6 +57,7 @@ Documento de planteamiento del backend web para la app Android offline-first ([a
 ## Pruebas
 
 - Unitarias: validacion Zod del payload Gson y serializacion del `UserDto`.
+- CORS: middleware con preflight `OPTIONS` y `CORS_ORIGINS`.
 - Contrato (integracion): contra PostgreSQL real via handlers de ruta (sin red), mismos JSON que `MockApiServer` de la app.
 - Pendiente F6: contract test cruzado (APK -> pod) y CI con imagen.
 
