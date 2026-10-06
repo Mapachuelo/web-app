@@ -1,0 +1,14 @@
+node_modules
+.next
+src/generated
+.git
+.github
+coverage
+deploy
+*.log
+.env
+.env.*
+!.env.example
+Dockerfile
+Containerfile
+.containerignore

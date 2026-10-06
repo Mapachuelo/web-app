@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String   @id @db.Uuid
+  nombre          String
+  apellido        String
+  documento       String
+  phone           String?
+  phonePrevious   String?  @map("phone_previous")
+  email           String?
+  emailPrevious   String?  @map("email_previous")
+  address         String?
+  addressPrevious String?  @map("address_previous")
+  passwordHash    String?  @map("password_hash")
+  updatedAt       BigInt   @map("updated_at")
+  deleted         Boolean  @default(false)
+  createdAt       BigInt   @map("created_at")
+  source          String   @default("app")
+
+  files     File[]
+  conflicts SyncConflict[]
+  events    SyncEvent[]
+
+  @@index([documento])
+  @@index([updatedAt])
+  @@map("users")
+}
+
+model File {
+  id         String @id @db.Uuid
+  userId     String @map("user_id") @db.Uuid
+  filename   String
+  mime       String
+  size       Int
+  sha256     String
+  path       String
+  uploadedAt BigInt @map("uploaded_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("files")
+}
+
+model Import {
+  id        String  @id @db.Uuid
+  filename  String
+  status    String  @default("pending")
+  total     Int     @default(0)
+  ok        Int     @default(0)
+  failed    Int     @default(0)
+  errors    Json?
+  createdAt BigInt  @map("created_at")
+
+  @@map("imports")
+}
+
+model SyncConflict {
+  id        String  @id @db.Uuid
+  userId    String? @map("user_id") @db.Uuid
+  payload   Json
+  error     String
+  resolved  Boolean @default(false)
+  createdAt BigInt  @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("sync_conflicts")
+}
+
+model SyncEvent {
+  id     String  @id @db.Uuid
+  userId String? @map("user_id") @db.Uuid
+  action String
+  source String
+  at     BigInt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("sync_events")
+}
+
+model AdminUser {
+  id           String @id @db.Uuid
+  email        String @unique
+  passwordHash String @map("password_hash")
+  createdAt    BigInt @map("created_at")
+
+  @@map("admin_users")
+}
+
+model ClientLog {
+  id           String @id @db.Uuid
+  deviceId     String @map("device_id")
+  appVersion   String @map("app_version")
+  baseUrl      String @map("base_url")
+  entries      Json
+  entriesCount Int    @map("entries_count")
+  receivedAt   BigInt @map("received_at")
+
+  @@index([deviceId])
+  @@index([receivedAt])
+  @@map("client_logs")
+}

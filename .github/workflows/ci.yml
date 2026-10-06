@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: syncapp
+          POSTGRES_PASSWORD: syncapp
+          POSTGRES_DB: syncapp
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U syncapp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://syncapp:syncapp@127.0.0.1:5432/syncapp?schema=public
+      API_KEY: ci_api_key
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Generar cliente Prisma
+        run: pnpm prisma:generate
+
+      - name: Aplicar migraciones
+        run: pnpm prisma:migrate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Build de imagen con Podman
+        run: podman build --target runner -t localhost/sync-app-web:ci .

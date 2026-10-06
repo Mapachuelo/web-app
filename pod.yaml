@@ -1,0 +1,79 @@
+# Manifiesto para `podman kube play` (ver POD.md para la guia de ejecucion).
+# Requiere el secreto `sync-app-env` (lo crea deploy/kube.sh a partir del .env).
+#
+#   bash deploy/kube.sh
+#
+# Un solo pod: la base y la web comparten red, asi que DATABASE_URL usa 127.0.0.1.
+# La web espera a PostgreSQL, aplica migraciones y recien arranca Next.js.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sync-app
+  labels:
+    app: sync-app
+spec:
+  restartPolicy: Always
+  containers:
+    - name: db
+      image: docker.io/library/postgres:17-alpine
+      envFrom:
+        - secretRef:
+            name: sync-app-env
+      volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql/data
+    - name: web
+      image: localhost/sync-app-kube:local
+      envFrom:
+        - secretRef:
+            name: sync-app-env
+      ports:
+        - containerPort: 3000
+          protocol: TCP
+      volumeMounts:
+        - name: uploads
+          mountPath: /data/uploads
+      command:
+        - sh
+        - -c
+        - |
+          attempt=1
+          until pnpm exec prisma migrate deploy; do
+            if [ "$attempt" -ge 60 ]; then
+              echo "no se pudo aplicar migraciones tras 60 intentos" >&2
+              exit 1
+            fi
+            attempt=$((attempt + 1))
+            sleep 2
+          done
+          exec pnpm start
+  volumes:
+    - name: pgdata
+      persistentVolumeClaim:
+        claimName: syncapp-pgdata
+    - name: uploads
+      persistentVolumeClaim:
+        claimName: syncapp-uploads
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: syncapp-pgdata
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: syncapp-uploads
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
